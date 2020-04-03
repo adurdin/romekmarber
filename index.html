@@ -286,9 +286,9 @@ var centerPoint = POINT(0,0);
   var t = intersectLines(firstDiagonal,secondDiagonal);
   centerPoint = linePointAt(firstDiagonal,t);
   t = projectPointOnLine(centerPoint,pageBottomEdge);
-  centerLine.b = linePointAt(pageBottomEdge,t);
+  centerLine.a = linePointAt(pageBottomEdge,t);
   t = projectPointOnLine(centerPoint,pageTopEdge);
-  centerLine.a = linePointAt(pageTopEdge,t);
+  centerLine.b = linePointAt(pageTopEdge,t);
 }
 function drawCenterLine(state,pos,click,time) {
   if (state == STATE_CENTER_LINE_READY) {
@@ -356,7 +356,7 @@ function drawTitleBaseLine(state,pos,click,time) {
   }
 }
 
-var headerBaseDiagonal = LINE(centerLine.a,authorBaseDiagonal.b);
+var headerBaseDiagonal = LINE(authorBaseDiagonal.b,centerLine.b);
 function drawHeaderBaseDiagonal(state,pos,click,time) {
   if (state == STATE_HEADER_BASE_DIAGONAL_READY) {
     return activeTarget(headerBaseDiagonal.a, pos,click,time);
@@ -513,7 +513,7 @@ function drawPortrait(state,pos,click,time) {
   var scale = Math.max(maxWidth/portraitImage.width,maxHeight/portraitImage.height);
   var width = scale*portraitImage.width;
   var height = scale*portraitImage.height;
-  var x = centerLine.b.x-0.5*width;
+  var x = centerLine.a.x-0.5*width;
   var y = authorBaseLine.a.y - 30;
 
   context.save();
