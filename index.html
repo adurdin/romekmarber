@@ -74,7 +74,12 @@ document.addEventListener('mousedown', function(event) {
   window.mousePos.y = y;
   window.mouseClick = true;
 });
+document.addEventListener('mouseup', function(event) {
+  event.preventDefault();
+  window.mouseClick = true;
+});
 document.addEventListener('touchstart', function(event) {
+  window.HIT_RADIUS = 40; // Allow less precision for touches
   event.preventDefault();
   var canvasRect = canvas.getBoundingClientRect();
   var bodyRect = document.body.getBoundingClientRect();
@@ -107,7 +112,6 @@ document.addEventListener('touchmove', function(event) {
 });
 document.addEventListener('touchend', function(event) {
   event.preventDefault();
-  var rect = canvas.getBoundingClientRect();
   window.mouseClick = true;
 });
 
@@ -229,13 +233,23 @@ function redraw(clock) {
   next = next || drawCenterLine.apply(null,args);
   next = next || drawTitleBaseLine.apply(null,args);
   next = next || drawHeaderBaseLine.apply(null,args);
+  next = next || drawAlignmentLines.apply(null,args);
   drawPenguin.apply(null,args);
   drawHeaderText.apply(null,args);
   drawTitleText.apply(null,args);
   drawAuthorText.apply(null,args);
-  if (next) {
-    ++window.globalState;
-    window.lastStateChange = clock;
+
+  if (window.globalState == STATE_ALL_DONE) {
+    canvas.style.cursor = 'pointer';
+    if (window.mouseClick && time > 3000) {
+      var url = "https://en.wikipedia.org/wiki/Romek_Marber";
+      window.location = url;
+    }
+  } else {
+    if (next) {
+      ++window.globalState;
+      window.lastStateChange = clock;
+    }
   }
   window.mouseClick = false;
   window.requestAnimationFrame(redraw);
@@ -309,6 +323,16 @@ var authorBaseDiagonal = LINE(POINT(pageB.x,pageA.y),POINT(0,0));
   authorBaseDiagonal.b = linePointAt(pageLeftEdge, t);
 }
 function drawAuthorBaseDiagonal(state,pos,click,time) {
+  function rightAngle(color) {
+    var rightAngleDir1 = MUL(NORMALIZE(SUB(authorBaseDiagonal.a,authorBaseCross)), -10);
+    var rightAngleDir2 = MUL(NORMALIZE(SUB(firstDiagonal.a,authorBaseCross)), 10);
+    var rightAngleStart1 = ADD(authorBaseCross,rightAngleDir2);
+    var rightAngleStart2 = ADD(authorBaseCross,rightAngleDir1);
+    context.strokeStyle = color;
+    line(LINE(rightAngleStart1,ADD(rightAngleStart1,rightAngleDir1)));
+    line(LINE(rightAngleStart2,ADD(rightAngleStart2,rightAngleDir2)));
+  }
+
   if (state == STATE_AUTHOR_BASE_DIAGONAL_READY) {
     return activeTarget(authorBaseDiagonal.a, pos,click,time);
   } else if (state == STATE_AUTHOR_BASE_DIAGONAL_DRAWING) {
@@ -318,13 +342,7 @@ function drawAuthorBaseDiagonal(state,pos,click,time) {
     if (hasCrossedFirstDiagonal) {
       // Snap
       var snappedPos = linePointAt(snappedLine,t);
-      var rightAngleDir1 = MUL(NORMALIZE(SUB(authorBaseDiagonal.a,authorBaseCross)), 10);
-      var rightAngleDir2 = MUL(NORMALIZE(SUB(firstDiagonal.a,authorBaseCross)), 10);
-      var rightAngleStart1 = ADD(authorBaseCross,rightAngleDir2);
-      var rightAngleStart2 = ADD(authorBaseCross,rightAngleDir1);
-      context.strokeStyle = COLOR_RED(1);
-      line(LINE(rightAngleStart1,ADD(rightAngleStart1,rightAngleDir1)));
-      line(LINE(rightAngleStart2,ADD(rightAngleStart2,rightAngleDir2)));
+      rightAngle(COLOR_RED(1));
       return activeLine(authorBaseDiagonal, snappedPos,click,time);
     } else {
       // Freeform
@@ -335,8 +353,10 @@ function drawAuthorBaseDiagonal(state,pos,click,time) {
     if (state == STATE_ALL_DONE) {
       var alpha = Math.min(time/2000, 1);
       context.strokeStyle = COLOR_SPECIAL(alpha);
+      rightAngle(COLOR_SPECIAL(alpha));
     } else {
       context.strokeStyle = COLOR_BLACK(1);
+      rightAngle(COLOR_BLACK(1));
     }
     line(authorBaseDiagonal);
     return false;
@@ -502,26 +522,43 @@ var penguinAlignmentLine = LINE(POINT(0,0),POINT(0,0));
   var cross = linePointAt(titleBaseLine,t);
   t = projectPointOnLine(cross,pageTopEdge);
   textAlignmentLine1.a = linePointAt(pageTopEdge,t);
-  t = projectPointOnLine(cross,titleBaseLine);
-  textAlignmentLine1.b = linePointAt(titleBaseLine,t);
+  t = projectPointOnLine(cross,authorBaseLine);
+  textAlignmentLine1.b = linePointAt(authorBaseLine,t);
   
   t = projectPointOnLine(authorBaseCross,pageTopEdge);
   textAlignmentLine2.a = linePointAt(pageTopEdge,t);
-  t = projectPointOnLine(authorBaseCross,titleBaseLine);
-  textAlignmentLine2.b = linePointAt(titleBaseLine,t);
+  t = projectPointOnLine(authorBaseCross,authorBaseLine);
+  textAlignmentLine2.b = linePointAt(authorBaseLine,t);
 
   var t = intersectLines(headerBaseLine,secondDiagonal);
   var cross = linePointAt(headerBaseLine,t);
   t = projectPointOnLine(cross,pageTopEdge);
   textAlignmentLine3.a = linePointAt(pageTopEdge,t);
-  t = projectPointOnLine(cross,titleBaseLine);
-  textAlignmentLine3.b = linePointAt(titleBaseLine,t);
+  t = projectPointOnLine(cross,authorBaseLine);
+  textAlignmentLine3.b = linePointAt(authorBaseLine,t);
 
   var t = intersectLines(headerBaseLine,firstDiagonal);
   var cross = linePointAt(headerBaseLine,t);
   t = projectPointOnLine(cross,pageTopEdge);
   penguinAlignmentLine.a = linePointAt(pageTopEdge,t);
   penguinAlignmentLine.b = cross;
+}
+function drawAlignmentLines(state,pos,click,time) {
+  if (state >= STATE_ALL_DONE) {
+    context.save();
+    context.lineWidth = 1;
+    context.setLineDash([2,4]);
+    var alpha = Math.min(time/2000, 1);
+    context.strokeStyle = COLOR_WHITE(alpha);
+    line(textAlignmentLine1);
+    line(textAlignmentLine2);
+    line(textAlignmentLine3);
+    line(penguinAlignmentLine);
+    context.restore();
+    return false;
+  } else {
+    return false;
+  }
 }
 
 var fontName = "Helvetica,'Helvetica Neue',Arial,sans-serif";
@@ -745,9 +782,8 @@ function activeTarget(p, pos,click,time) {
   return (click && hit);
 }
 
-
+var HIT_RADIUS = 20;
 function hittest(p0,p1) {
-  const HIT_RADIUS = 20;
   return (Math.abs(p0.x-p1.x) <= HIT_RADIUS && Math.abs(p0.y-p1.y) <= HIT_RADIUS);
 }
 
