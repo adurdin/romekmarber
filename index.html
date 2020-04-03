@@ -541,7 +541,8 @@ var penguinAlignmentLine = LINE(POINT(0,0),POINT(0,0));
   var cross = linePointAt(headerBaseLine,t);
   t = projectPointOnLine(cross,pageTopEdge);
   penguinAlignmentLine.a = linePointAt(pageTopEdge,t);
-  penguinAlignmentLine.b = cross;
+  t = projectPointOnLine(cross,authorBaseLine);
+  penguinAlignmentLine.b = linePointAt(authorBaseLine,t);
 }
 function drawAlignmentLines(state,pos,click,time) {
   if (state >= STATE_ALL_DONE) {
@@ -566,7 +567,7 @@ var fontName = "Helvetica,'Helvetica Neue',Arial,sans-serif";
 function drawPenguin(state,pos,click,time) {
   if (state >= STATE_ALL_DONE) {
     context.save();
-    var destHeight = Math.abs(penguinAlignmentLine.a.y-penguinAlignmentLine.b.y) * 0.7;
+    var destHeight = Math.abs(penguinAlignmentLine.a.y-headerBaseLine.a.y) * 0.7;
     var scale = destHeight/penguinImage.height;
     var x = penguinAlignmentLine.a.x - scale*penguinImage.width;
     var y = headerBaseLine.a.y - scale*penguinImage.height - 8;
