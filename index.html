@@ -21,22 +21,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 -->
 <body>
 <style>
-    body {
+    html, body {
       margin: 0;
-      padding: 10px;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      position: relative;
+      background-color: rgba(250,250,250,1);
     }
     canvas {
       background-color: rgba(250,250,250,1);
       width: 414px;
       height: 680px;
     }
-    #wrapper {
-      padding: 40px;
-      margin: auto;
-      width: 414px;
-    }
 </style>
-<div id='wrapper'><canvas id='canvas' width='414' height='680'></canvas></div>
+<canvas id='canvas' width='414' height='680'></canvas>
 <script>
 "use strict";
 var canvas = document.getElementById('canvas');
@@ -48,13 +48,58 @@ var mouseClick = false;
 document.addEventListener('mousemove', function(event) {
   event.preventDefault();
   var rect = canvas.getBoundingClientRect();
-  window.mousePos.x = event.clientX - rect.left; // 40: the padding
-  window.mousePos.y = event.clientY - rect.top; // 40: the padding
+  var x = (event.clientX - rect.left) / rect.width * canvas.width;
+  var y = (event.clientY - rect.top) / rect.width * canvas.width;
+  window.mousePos.x = x;
+  window.mousePos.y = y;
 });
 document.addEventListener('mousedown', function(event) {
   event.preventDefault();
+  var rect = canvas.getBoundingClientRect();
+  var x = (event.clientX - rect.left) / rect.width * canvas.width;
+  var y = (event.clientY - rect.top) / rect.width * canvas.width;
+  console.log("click: " + x + "," + y);
   window.mouseClick = true;
 });
+
+// Prevent page bouncing on iOS:
+document.addEventListener('touchmove', function(event) {
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+}, { passive: false });
+
+window.addEventListener('resize', function(event) {
+  adjustToWindowSize();
+});
+window.addEventListener('load', function(event) {
+  adjustToWindowSize();
+});
+
+function adjustToWindowSize() {
+  const padding = 20;
+  var docWidth = document.documentElement.clientWidth - 2*padding;
+  var docHeight = document.documentElement.clientHeight - 2*padding;
+  var docAspect = docWidth / docHeight;
+  var nativeWidth = canvas.width;
+  var nativeHeight = canvas.height;
+  var nativeAspect = nativeWidth / nativeHeight;
+
+  var scale;
+  if (docAspect < nativeAspect) {
+    scale = docWidth / nativeWidth;
+  } else {
+    scale = docHeight / nativeHeight;
+  }
+  var scaledWidth = nativeWidth * scale;
+  var scaledHeight = nativeHeight * scale;
+  var centeredLeft = 0.5*(docWidth + 2*padding - scaledWidth);
+  var centeredTop = 0.5*(docHeight + 2*padding - scaledHeight);
+  canvas.style.position = 'absolute';
+  canvas.style.width = scaledWidth + 'px';
+  canvas.style.height = scaledHeight + 'px';
+  canvas.style.left = centeredLeft + 'px';
+  canvas.style.top = centeredTop + 'px';
+}
 
 // Anchors
 var pageA = POINT(5,5);
@@ -658,7 +703,8 @@ function activeTarget(p, pos,click,time) {
 
 
 function hittest(p0,p1) {
-  return (Math.abs(p0.x-p1.x) <= 20 && Math.abs(p0.y-p1.y) <= (2*TARGET_RADIUS));
+  const HIT_RADIUS = 20;
+  return (Math.abs(p0.x-p1.x) <= HIT_RADIUS && Math.abs(p0.y-p1.y) <= HIT_RADIUS);
 }
 
 function fillTextCondensed(text,x,y,factor) {
