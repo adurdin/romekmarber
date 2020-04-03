@@ -44,6 +44,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       width: 414px;
       height: 680px;
     }
+    * {
+      user-select: none;
+    }
 </style>
 <canvas id='canvas' width='414' height='680'></canvas>
 <script>
@@ -58,7 +61,7 @@ document.addEventListener('mousemove', function(event) {
   event.preventDefault();
   var rect = canvas.getBoundingClientRect();
   var x = (event.clientX - rect.left) / rect.width * canvas.width;
-  var y = (event.clientY - rect.top) / rect.width * canvas.width;
+  var y = (event.clientY - rect.top) / rect.height * canvas.height;
   window.mousePos.x = x;
   window.mousePos.y = y;
 });
@@ -66,16 +69,45 @@ document.addEventListener('mousedown', function(event) {
   event.preventDefault();
   var rect = canvas.getBoundingClientRect();
   var x = (event.clientX - rect.left) / rect.width * canvas.width;
-  var y = (event.clientY - rect.top) / rect.width * canvas.width;
-  console.log("click: " + x + "," + y);
+  var y = (event.clientY - rect.top) / rect.height * canvas.height;
+  window.mousePos.x = x;
+  window.mousePos.y = y;
   window.mouseClick = true;
 });
-document.addEventListener('touchdown', function(event) {
+document.addEventListener('touchstart', function(event) {
+  event.preventDefault();
+  var canvasRect = canvas.getBoundingClientRect();
+  var bodyRect = document.body.getBoundingClientRect();
+  var rect = {
+    left: (canvasRect.left-bodyRect.left),
+    top: (canvasRect.top-bodyRect.top),
+    width: canvasRect.width,
+    height: canvasRect.height,
+  };
+  var x = (event.touches[0].clientX - rect.left) / rect.width * canvas.width;
+  var y = (event.touches[0].clientY - rect.top) / rect.height * canvas.height;
+  window.mousePos.x = x;
+  window.mousePos.y = y;
+  window.mouseClick = true;
+});
+document.addEventListener('touchmove', function(event) {
+  event.preventDefault();
+  var canvasRect = canvas.getBoundingClientRect();
+  var bodyRect = document.body.getBoundingClientRect();
+  var rect = {
+    left: (canvasRect.left-bodyRect.left),
+    top: (canvasRect.top-bodyRect.top),
+    width: canvasRect.width,
+    height: canvasRect.height,
+  };
+  var x = (event.touches[0].clientX - rect.left) / rect.width * canvas.width;
+  var y = (event.touches[0].clientY - rect.top) / rect.height * canvas.height;
+  window.mousePos.x = x;
+  window.mousePos.y = y;
+});
+document.addEventListener('touchend', function(event) {
   event.preventDefault();
   var rect = canvas.getBoundingClientRect();
-  var x = (event.clientX - rect.left) / rect.width * canvas.width;
-  var y = (event.clientY - rect.top) / rect.width * canvas.width;
-  console.log("click: " + x + "," + y);
   window.mouseClick = true;
 });
 
@@ -87,7 +119,7 @@ window.addEventListener('load', function(event) {
 });
 
 function adjustToWindowSize() {
-  const padding = 20;
+  const padding = 0.05 * document.documentElement.clientHeight;
   var docWidth = document.documentElement.clientWidth - 2*padding;
   var docHeight = document.documentElement.clientHeight - 2*padding;
   var docAspect = docWidth / docHeight;
@@ -130,6 +162,7 @@ function COLOR_SPECIAL(a) {
 }
 
 var opaqueWhite = COLOR_WHITE(1.0);
+document.documentElement.style.backgroundColor = opaqueWhite;
 document.body.style.backgroundColor = opaqueWhite;
 canvas.style.backgroundColor = opaqueWhite;
 
